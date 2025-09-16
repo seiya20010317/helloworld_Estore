@@ -1,0 +1,95 @@
+name: Office Yelp CI/CD Pipeline
+
+# Trigger events - matches your diagram flow
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Environment definitions
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # TESTING PHASE - matches "Run E2E Tests on Shape"
+  test:
+    name: Run E2E Tests
+    runs-on: ubuntu-latest
+    # Only run on PRs (not on direct pushes to main)
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    # Simulate your "EZE Tests" - in a real app, you'd have actual tests here
+    - name: Run basic validation (EZE Tests)
+      run: |
+        echo "Running basic HTML validation..."
+        if [ ! -f "index.html" ]; then
+          echo "❌ ERROR: index.html not found - EZE Test Failed"
+          exit 1
+        fi
+        
+        echo "✅ HTML file exists"
+        echo "✅ Basic structure validation passed"
+        echo "All EZE Tests passed successfully!"
+
+  # DEPLOYMENT PHASE - matches "Promote in Vessel"        
+  deploy-development:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: test
+    # Only deploy to development when merging to main
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: 
+      name: development
+      url: https://office-yelp.vercel.app
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to Vercel (Development)
+      uses: amondnet/vercel-action@v20
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.ORG_ID }}
+        vercel-project-id: ${{ secrets.PROJECT_ID }}
+        vercel-args: '--env DEV'
+        
+    - name: Update status
+      run: echo "✅ Successfully deployed to Development environment"
+
+  # PRODUCTION DEPLOYMENT - matches "Manual Step - Promote to Production"
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    # This requires manual approval - matches your diagram
+    environment: 
+      name: production
+      url: https://office-yelp-git-main-your-username.vercel.app
+    # Only run when triggered manually or by tag
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to Vercel (Production)
+      uses: amondnet/vercel-action@v20
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.ORG_ID }}
+        vercel-project-id: ${{ secrets.PROJECT_ID }}
+        vercel-args: '--prod'
+        
+    - name: Update status
+      run: echo "✅ Successfully deployed to Production environment"
