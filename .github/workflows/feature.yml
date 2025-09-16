@@ -1,0 +1,40 @@
+name: feature-branch
+
+on:
+  pull_request:
+    branches:
+      - main   # PRs into main must pass checks
+  push:
+    branches:
+      - 'feature/**'   # Only run directly on feature branches
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Linter
+        run: npm run lint
+
+      - name: Run Tests
+        run: npm test -- --ci --watchAll=false
+
+      - name: Build App
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-build
+          path: .next
