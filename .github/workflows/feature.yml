@@ -1,40 +1,22 @@
-name: feature-branch
+name: Deploy to Vercel
 
 on:
-  pull_request:
-    branches:
-      - main   # PRs into main must pass checks
   push:
     branches:
-      - 'feature/**'   # Only run directly on feature branches
+      - main   # deploy only when main is updated
 
 jobs:
-  ci:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
         with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run Linter
-        run: npm run lint
-
-      - name: Run Tests
-        run: npm test -- --ci --watchAll=false
-
-      - name: Build App
-        run: npm run build
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-build
-          path: .next
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}       # stored in GitHub repo secrets
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}     # from Vercel settings
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }} # from Vercel settings
+          working-directory: ./
